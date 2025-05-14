@@ -51,7 +51,7 @@ class GitPushEachPack(Action):
                 # Initialize Git if not already a repo
                 if not os.path.isdir(git_dir):
                     self.logger.info(f"Initializing git repo in {pack_path}")
-                    subprocess.run(['git', 'init', '-b', branch], cwd=pack_path, check=True)
+                    subprocess.run(['git', 'init'], cwd=pack_path, check=True)
 
                 # Set or update remote origin
                 remote_check = subprocess.run(['git', 'remote', 'get-url', 'origin'], cwd=pack_path, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
