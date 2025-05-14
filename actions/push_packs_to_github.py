@@ -31,12 +31,9 @@ class GitPushEachPack(Action):
             repo_check = requests.get(f"{github_api_url}/repos/{github_user_or_org}/{repo_name}", headers=headers)
             if repo_check.status_code == 404:
                 self.logger.info(f"Repository '{repo_name}' not found. Creating...")
-                create_url = f"{github_api_url}/user/repos" if github_user_or_org == self._get_authenticated_user(github_token) else f"{github_api_url}/orgs/{github_user_or_org}/repos"
-                create_resp = requests.post(
-                    create_url,
-                    headers=headers,
-                    json={"name": repo_name, "private": False}
-                )
+                create_resp = requests.post(f"{github_api_url}/user/repos" if github_user_or_org == self._get_authenticated_user(github_token) else f"{github_api_url}/orgs/{github_user_or_org}/repos",
+                                            headers=headers,
+                                            json={"name": repo_name, "private": False})
                 if create_resp.status_code not in [201, 202]:
                     self.logger.error(f"Failed to create repo {repo_name}: {create_resp.text}")
                     continue
@@ -46,7 +43,7 @@ class GitPushEachPack(Action):
                 continue
 
             try:
-                # Mark as safe for Git
+                # Git safe directory
                 subprocess.run(['git', 'config', '--global', '--add', 'safe.directory', pack_path], check=True)
 
                 git_dir = os.path.join(pack_path, '.git')
@@ -63,21 +60,11 @@ class GitPushEachPack(Action):
                 else:
                     subprocess.run(['git', 'remote', 'add', 'origin', repo_url], cwd=pack_path, check=True)
 
-                # Reset and clean to avoid pollution
-                subprocess.run(['git', 'reset'], cwd=pack_path, check=True)
-                subprocess.run(['git', 'clean', '-fd'], cwd=pack_path, check=True)
-
-                # Add all files (even hidden/untracked)
-                subprocess.run(['git', 'add', '--force', '.'], cwd=pack_path, check=True)
-
-                # Commit if changes
+                # Add, commit, and push
+                subprocess.run(['git', 'add', '--all'], cwd=pack_path, check=True)
                 status = subprocess.run(['git', 'status', '--porcelain'], cwd=pack_path, stdout=subprocess.PIPE)
                 if status.returncode == 0 and status.stdout:
                     subprocess.run(['git', 'commit', '-m', f'Update pack: {pack_name}'], cwd=pack_path, check=True)
-                else:
-                    self.logger.info(f"No new changes to commit for {pack_name}.")
-
-                # Push
                 subprocess.run(['git', 'checkout', '-B', branch], cwd=pack_path, check=True)
                 subprocess.run(['git', 'push', '-u', 'origin', branch], cwd=pack_path, check=True)
 
@@ -91,6 +78,7 @@ class GitPushEachPack(Action):
         return True
 
     def _get_authenticated_user(self, token):
+        # Utility to determine if this is a user or org repo
         resp = requests.get('https://api.github.com/user', headers={
             'Authorization': f'token {token}',
             'Accept': 'application/vnd.github+json'
