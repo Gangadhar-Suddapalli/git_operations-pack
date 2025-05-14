@@ -1,0 +1,5 @@
+name: git_operations
+description: Pack for pushing packs to GitHub
+version: 1.0.0
+author: Gangadhar
+email: suddapalli.gangadhar@accelnomics.com

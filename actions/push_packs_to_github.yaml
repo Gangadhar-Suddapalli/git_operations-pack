@@ -1,0 +1,16 @@
+---
+name: git_push_action
+runner_type: python-script
+description: "Push each StackStorm pack to its own GitHub repository. Creates the repo if it doesn't exist."
+enabled: true
+entry_point: "push_packs_to_github.py"
+parameters:
+  github_token:
+    type: string
+    description: "GitHub Personal Access Token with repo permissions"
+    required: true
+    secret: true
+  github_user_or_org:
+    type: string
+    description: "GitHub username or organization under which the repos will be created"
+    required: true
